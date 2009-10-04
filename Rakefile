@@ -2,6 +2,7 @@ begin
   require 'jeweler'
   require 'uuidtools'
   require 'pathname'
+  require 'rake/testtask'
   
   Jeweler::Tasks.new do |s|
     s.name = "watertower"
@@ -47,13 +48,17 @@ begin
   namespace :test do
     desc "Runs the tests for the XUL application component of WaterTower."
     task :xul do
-
+      exec("xultest", "-testDir", (Pathname(__FILE__).parent + "xulapp/test/").expand_path.to_s)
     end
 
     desc "Runs the tests for the Ruby component of WaterTower."
-    task :ruby do
+    Rake::TestTask.new(:ruby) do |t|
+      t.libs << "rubygoop/test"
+      t.pattern = 'rubygoop/test/**/*_test.rb'
+      t.verbose = true
     end
-  end
+
+  end # test
   
 rescue LoadError
   puts "Jeweler, or one of its dependencies, is not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"
