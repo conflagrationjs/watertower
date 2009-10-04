@@ -20,8 +20,7 @@ module Watertower
     def dispatch(message_object)
       @output_pipe.open(Fcntl::O_WRONLY) {|p| p.puts(message_object.to_json) }
       if block_given?
-        io = @input_pipe.open(Fcntl::O_RDONLY)
-        yield(JSON.parse(io.readline))
+        @input_pipe.open(Fcntl::O_RDONLY) {|p| yield(JSON.parse(p.readline)) }
       end
     end
     
