@@ -79,11 +79,11 @@ context "a PipeIPC object" do
   
   should("raise if not given a pipe_dir argument") do
     Watertower::PipeIPC.new(:namespec => "watertower")
-  end.raises(ArgumentError)
+  end.raises(ArgumentError, /:pipe_dir must be given/)
   
   should("raise if not given a namespec argument") do
     Watertower::PipeIPC.new(:pipe_dir => "/tmp/foo")
-  end.raises(ArgumentError)
+  end.raises(ArgumentError, /:namespec must be given/)
   
   context "with :create set to false" do
     setup do
@@ -108,4 +108,25 @@ context "a PipeIPC object" do
     end.raises(IOError)
   end # with :create set to true but given a non-writable pipe dir
 
+  context "when performing IPC with a PipeIPC object" do
+    setup do
+      pipe_dir = make_pipe_dir.call
+      Watertower::PipeIPC.new(:pipe_dir => pipe_dir, :namespec => "watertower.%s")
+    end
+    
+    should("write the given message as JSON to the output pipe") do
+      io = IO.popen("cat #{topic.output_pipe}")
+      topic.send_message(:foo => :bar)
+      io.read
+    end.equals({:foo => :bar}.to_json)
+    
+    should("call the given callback with the deserialized object") do
+      IO.popen("cat #{topic.output_pipe} > /dev/null")
+      io = IO.popen(%Q[cat > "#{topic.input_pipe}"], 'w')
+      io.puts({:snafu => :qhat}.to_json)
+      topic.send_message(:foo => :bar) { |response| response }
+    end.equals('snafu' => 'qhat')
+    
+  end
+  
 end
