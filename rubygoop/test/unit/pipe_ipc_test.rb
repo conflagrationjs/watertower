@@ -116,15 +116,15 @@ context "a PipeIPC object" do
     
     should("write the given message as JSON to the output pipe") do
       io = IO.popen("cat #{topic.output_pipe}")
-      topic.send_message(:foo => :bar)
+      topic.dispatch(:foo => :bar)
       io.read
-    end.equals({:foo => :bar}.to_json)
+    end.equals("#{{:foo => :bar}.to_json}\n")
     
     should("call the given callback with the deserialized object") do
       IO.popen("cat #{topic.output_pipe} > /dev/null")
       io = IO.popen(%Q[cat > "#{topic.input_pipe}"], 'w')
       io.puts({:snafu => :qhat}.to_json)
-      topic.send_message(:foo => :bar) { |response| response }
+      topic.dispatch(:foo => :bar) { |response| response }
     end.equals('snafu' => 'qhat')
     
   end

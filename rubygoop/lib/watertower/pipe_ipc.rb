@@ -17,8 +17,8 @@ module Watertower
       create_pipes if options[:create]
     end
     
-    def send_message(message_object)
-      @output_pipe.open(Fcntl::O_WRONLY) {|p| p << message_object.to_json }
+    def dispatch(message_object)
+      @output_pipe.open(Fcntl::O_WRONLY) {|p| p.puts(message_object.to_json) }
       if block_given?
         io = @input_pipe.open(Fcntl::O_RDONLY)
         yield(JSON.parse(io.readline))
