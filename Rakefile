@@ -59,7 +59,8 @@ begin
     end
 
   end # test
-  
+
+  task :default => %w[test:ruby test:xul]
 rescue LoadError
   puts "Jeweler, or one of its dependencies, is not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"
 end
