@@ -15,6 +15,10 @@ context "a PipeIPC object" do
       Watertower::PipeIPC.new(:pipe_dir => pipe_dir, :namespec => "watertower.%s")
     end
     
+    should("have an accessor for the lock file that returns false as :lock is false by default") do
+      topic.lock_file
+    end.equals(nil)
+    
     should("have an accessor for the pipe directory that returns a Pathname object") do
       topic.pipe_dir
     end.kind_of(Pathname)
@@ -125,8 +129,45 @@ context "a PipeIPC object" do
       io = IO.popen(%Q[cat > "#{topic.input_pipe}"], 'w')
       io.puts({:snafu => :qhat}.to_json)
       topic.dispatch(:foo => :bar) { |response| response }
-    end.equals('snafu' => 'qhat')
-    
+    end.equals('snafu' => 'qhat')    
   end
+  
+  context "when performing IPC with a PipeIPC object with :lock set to true" do
+    setup do
+      pipe_dir = make_pipe_dir.call
+      Watertower::PipeIPC.new(:pipe_dir => pipe_dir, :namespec => "watertower.%s", :lock => true)
+    end
+     
+    should("have an accessor for the lock file that returns a Pathname object") do
+      topic.lock_file
+    end.kind_of(Pathname)
+    
+    should("create the lock file") do
+      topic.lock_file.exist?
+    end
+    
+    should("lock the lock file until the request/response cycle is done") do
+      IO.popen("cat #{topic.output_pipe} > /dev/null")
+      IO.popen(%Q[cat > "#{topic.input_pipe}"], 'w').puts({:snafu => :qhat}.to_json)
+      thread = Thread.new do
+        topic.dispatch(:foo => :bar) do |response|
+          Thread.current['received'] = true
+          nil until Thread.current['stop']
+        end
+      end
+      nil until thread['received']
+      locked = topic.lock_file.open('w') { |f| f.flock(File::LOCK_EX | File::LOCK_NB) == false }
+      thread['stop'] = true
+      thread.join
+      locked
+    end
+    
+    should("unlock the lock file when the request/response cycle is done") do
+      IO.popen("cat #{topic.output_pipe} > /dev/null")
+      IO.popen(%Q[cat > "#{topic.input_pipe}"], 'w').puts({:snafu => :qhat}.to_json)
+      topic.dispatch(:foo => :bar)
+      topic.lock_file.open('w') { |f| f.flock(File::LOCK_EX | File::LOCK_NB) == 0 }
+    end
+  end # when performing IPC with a PipeIPC object with :lock set to true
   
 end
