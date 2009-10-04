@@ -22,6 +22,8 @@ Gem::Specification.new do |s|
      "README",
      "Rakefile",
      "VERSION",
+     "bin/watertower",
+     "watertower.gemspec",
      "xulapp/application.ini",
      "xulapp/chrome/chrome.manifest",
      "xulapp/chrome/content/data/motd.txt",
